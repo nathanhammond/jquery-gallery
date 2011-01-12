@@ -132,6 +132,8 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 			draw.call($gallery);
 			
 			// Make sure the images are loaded before running draw.
+			// Following code from jquery.imagesLoaded.js
+			// mit license. paul irish. 2010.
 			/*
 			$images.bind('load', function() {
 				if (--length <= 0) { draw.call($gallery); }
@@ -254,3 +256,5 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 // TODO: Come up with animation for browsers that don't support 3D.
 // TODO: Add in loading animation for images.
 // TODO: Make templates adjustable by changing selectors to be defined by variables.
+// TODO: Debounce gallery resize.
+// TODO: Force absolute minimum sizes.
