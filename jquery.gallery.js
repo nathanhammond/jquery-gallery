@@ -8,7 +8,8 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 		gallery: '.gallery',
 		galleryitems: '.gallery li',
 		slider: '.slider',
-		skirt: '.skirt'				
+		skirt: '.skirt',
+		items: 'img'
 	}
 	var maxitemwidth, maxitemheight, galleryitemwidth, galleryheight;
 	var initialized = false;			
@@ -66,10 +67,10 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 		initialized = true;
 
 		// Build the images array.
-		$images = this.find('img');
+		$items = this.find(selectors.items);
 
 		// Store gallery item information.
-		$images.each(function() {
+		$items.each(function() {
 			$this = $(this);
 
 			var temp = new Image();
@@ -99,7 +100,7 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 		var startingpos = 0;
 
 		// Build the slider, set the starting value.
-		this.find(selectors.slider).slider({ max: $images.length-1, value: startingpos }).bind("slide", function(event, ui) {
+		this.find(selectors.slider).slider({ max: $items.length-1, value: startingpos }).bind("slide", function(event, ui) {
 			$gallery.gallery('value', ui.value);
 		});
 
@@ -117,7 +118,7 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 			$.extend( settings, options );
 
 			// Bind image clicks.
-			this.delegate('img', 'click', function(e) {
+			this.delegate(selectors.items, 'click', function(e) {
 				$gallery.gallery('value', $(this).closest('li'));
 			});
 
@@ -126,8 +127,8 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 				$gallery.gallery('redraw');
 			});
 
-			var $images = this.find('img');
-			var length = $images.length;
+			var $items = this.find(selectors.items);
+			var length = $items.length;
 
 			draw.call($gallery);
 			
@@ -135,7 +136,7 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 			// Following code from jquery.imagesLoaded.js
 			// mit license. paul irish. 2010.
 			/*
-			$images.bind('load', function() {
+			$items.bind('load', function() {
 				if (--length <= 0) { draw.call($gallery); }
 			}).each(function() {
 				if (this.complete || this.complete === undefined){
@@ -158,7 +159,7 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 			// Disable transitions, reset each li to be the correct size, re-enable transitions.
 			this.find(selectors.galleryitems).css({ webkitTransition: 'none !important' }).each(function(i) {
 				$(this).css({ width: galleryitems[i].scaledwidth+'px', height: galleryitems[i].scaledheight+'px', borderBottom: galleryitems[i].scaledheight+'px solid #000', marginBottom: '-'+galleryitems[i].scaledheight+'px', webkitTransformOriginY: galleryitems[i].transformOriginY+'px' });
-				$(this).find('img').attr({ width: galleryitems[i].scaledwidth, height: galleryitems[i].scaledheight });
+				$(this).find(selectors.items).attr({ width: galleryitems[i].scaledwidth, height: galleryitems[i].scaledheight });
 			}).css({ webkitTransition: '-webkit-transform .5s, left .5s' });
 
 			// Adjust skirt height.

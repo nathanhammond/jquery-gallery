@@ -1,5 +1,5 @@
 .gallerycontainer { background: #000; overflow: hidden; }
-.gallery { position: relative; overflow: visible; margin: 0 auto; }
+.gallery { position: relative; overflow: visible; margin: 0 auto; list-style-position: outside; list-style: none; }
 .gallery li { position: absolute; list-style: none; bottom: 0; }
 .gallery li img { display: block; width: 100%; }
 
