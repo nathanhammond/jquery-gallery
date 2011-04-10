@@ -3,22 +3,6 @@
 .gallery li { position: absolute; list-style: none; bottom: 0; }
 .gallery li img { display: block; width: 100%; }
 
-.skirt { z-index: 10000; position: relative; background: -webkit-gradient(linear, left top, left bottom, color-stop(0, rgba(0,0,0,0)), color-stop(1, rgba(0,0,0,1))); }
-
-.gallery img {
-	-webkit-box-reflect: below 0px -webkit-gradient(linear, left top, left bottom, color-stop(0, rgba(255,255,255,.4)));
-}
-.gallery li {
-	-webkit-transform: perspective(200) translateZ(-70px) rotateY(31deg);
-	-webkit-transition: -webkit-transform .5s, left .5s;
-}
-.gallery li.focus {
-	-webkit-transform: perspective(200) translateZ(0px) rotateY(0deg);
-}
-.gallery li.focus ~ li {
-	-webkit-transform: perspective(200) translateZ(-70px) rotateY(-31deg);
-}
-
 .track { height: 14px; border: 1px solid #B3B3B3; margin: 10px 110px 0; background: none; -moz-border-radius: 8px; -webkit-border-radius: 8px; border-radius: 8px; }
 .liner { height: 12px; border: 1px solid #FEFEFE; background: #E0E0E0; opacity: .24; -moz-border-radius: 7px; -webkit-border-radius: 7px; border-radius: 7px; }
 .ui-slider { position: relative; text-align: left; border: none; border-left: 15px solid transparent; border-right: 15px solid transparent; background: none; margin: -14px 0 0; -moz-border-radius: 0px; -webkit-border-radius: 0px; border-radius: 0px; height: 14px; }

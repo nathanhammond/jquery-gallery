@@ -1,8 +1,3 @@
-// Define our templates.
-$.template('gallery.wrapper', '<ul class="gallery" style="width: ${width}px; height: ${height}px;">${content}</ul>');
-$.template('gallery.wrapperitem', '<li style="width: ${scaledwidth}px; height: ${scaledheight}; border-bottom: ${scaledheight}px solid #000; margin-bottom: -${scaledheight}px; -webkit-transform-origin-y: ${transformOriginY}px;"><img src="${src}" width="${scaledwidth}" height="${scaledheight}" alt="${alt}"/></li>');
-$.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><div class="track"><div class="liner"></div><div class="slider"></div></div></div>');
-
 (function($) {
 	var gallery  = {
 		_create: function() {},
@@ -15,10 +10,13 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 			var plugin = this;
 			var container = this.element;
 			var items = container.find(plugin.options.selectors.items);
-				this.items = items;
+				plugin.items = items;
 			var length = items.length;
-				this.length = length;
-			
+				plugin.length = length;
+
+			// Build our templates.
+			plugin._templates();
+
 			// Bind item clicks.
 			container.delegate(plugin.options.selectors.items, 'click', function() {
 				plugin.focus($.inArray(this, plugin.items));
@@ -31,6 +29,14 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 
 			// Draw!
 			plugin._draw();
+		},
+
+		// Templates for the carousel version.
+		_templates: function() {
+			// Define our templates.
+			$.template('gallery.wrapper', '<ul class="gallery" style="width: ${width}px; height: ${height}px;">${content}</ul>');
+			$.template('gallery.wrapperitem', '<li><img src="${src}" width="" height="" alt="${alt}"/></li>');
+			$.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><div class="track"><div class="liner"></div><div class="slider"></div></div></div>');
 		},
 
 		// Helper function to do all the math.
@@ -131,15 +137,14 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 			gallerywrapper.html(content);
 			container.html(gallerywrapper).append(skirt);
 
-			var startingpos = 0;
-
 			// Build the slider, set the starting value.
-			container.find(plugin.options.selectors.slider).slider({ max: length - 1, value: startingpos }).bind("slide", function(event, ui) {
+			container.find(plugin.options.selectors.slider).slider({ max: length - 1, value: current }).bind("slide", function(event, ui) {
 				plugin.focus(ui.value);
 			});
 
-			// Reset our items to be the new ones!
+			// Reset our items to be the actual ones!
 			this.items = container.find(plugin.options.selectors.items);
+			this.itemcontainers = container.find(plugin.options.selectors.galleryitems);
 
 			// All set!
 			this.loaded = true;
@@ -147,6 +152,9 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 			// Set the starting position to the first element.
 			plugin.focus(current);
 		},
+
+		// Helper hook carousel version
+		_update: function() {},
 
 		// This happens any time something changes.
 		_redraw: function() {
@@ -161,17 +169,66 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 			// Reset container size.
 			container.find(plugin.options.selectors.gallery).css({ width: plugin.galleryitemwidth+'px', height: plugin.galleryheight+'px'});
 
-			// Disable transitions on left, reset each li to be the correct size, re-enable transitions.
-			container.find(plugin.options.selectors.galleryitems).css({ webkitTransition: '-webkit-transform .5s' }).each(function(i) {
-				$(this).css({ width: galleryitems[i].scaledwidth+'px', height: galleryitems[i].scaledheight+'px', borderBottom: galleryitems[i].scaledheight+'px solid #000', marginBottom: '-'+galleryitems[i].scaledheight+'px', webkitTransformOriginY: galleryitems[i].transformOriginY+'px' });
-				$(this).find(plugin.options.selectors.items).attr({ width: galleryitems[i].scaledwidth, height: galleryitems[i].scaledheight });
-			}).css({ webkitTransition: '-webkit-transform .5s, left .5s' });
+			plugin._update();
 
 			// Adjust skirt height.
 			container.find(plugin.options.selectors.skirt).css({ height: plugin.galleryheight+'px' });
 
 			// Set the focus back to where we were already.
 			plugin.focus(current);
+		},
+		
+		_animate: function(angle) {
+			var plugin = this;
+			var container = this.element;
+
+			plugin.to = angle;
+			container.stop().animate({angle: angle},{
+				step: function(now) {plugin._position(now)}
+			});
+		},
+		
+		_position: function(angle) {
+			var plugin = this;
+			var galleryitems = plugin.galleryitems;
+
+			plugin.from = angle;
+
+			var circle = 2 * Math.PI;
+			var step = circle / (plugin.options.limit * 4);
+			var start = (3/2 * Math.PI) - angle;
+
+			plugin.itemcontainers.each(function(index) {
+				var angle = start + index * step;
+				
+				if (angle <= circle && angle >= Math.PI) {
+					this.style.display = 'block';
+				} else {
+					this.style.display = 'none';
+					return;
+				}
+
+				var x = Math.cos(angle) * plugin.options.radius,
+					y = Math.sin(angle) * plugin.options.radius * plugin.options.tilt,
+					sinzerotoone = ((-Math.sin(angle) + 1)/2),
+					depth = sinzerotoone/(1/(1-plugin.options.depth)) + plugin.options.depth,
+					width = galleryitems[index].scaledwidth * depth,
+					height = galleryitems[index].scaledheight * depth,
+					top = y - height/2 + plugin.galleryheight/2 + 'px',
+					left = Math.round(x) > 0 ? x + 'px' : 'auto',
+					right = Math.round(x) < 0 ? -x + 'px' : 'auto',
+					zindex = parseInt(sinzerotoone*100,10);
+
+
+				$.extend(this.style, {
+					width: width + "px",
+					height: height + "px",
+					left: left,
+					right: right,
+					top: top,
+					zIndex: zindex
+				});				
+			});
 		},
 
 		// Set the focus to a particular index.
@@ -182,50 +239,12 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 			var galleryitems = this.galleryitems;
 			var length = this.length;
 
-			// Watch out for out of bounds.
-			if (index < 0 || index >= length) {
-				return;
-			}
+			var circle = 2 * Math.PI;
+			var step = circle / (plugin.options.limit * 4);
+			var angle = index * step;
 
-			var previous = this.current;
-			var current = index;
-				this.current = current;
-
-			container.find(plugin.options.selectors.slider).slider('value', current);
-
-			items.eq(previous).closest('li').removeClass('focus');
-			items.eq(current).closest('li').addClass('focus');
-
-			items.eq(current).closest('li').prevAll().each(function(index) {
-				$this = $(this);
-
-				$this.css({
-					left: (index * -plugin.options.ratios['subsequent-margin'] * plugin.galleryitemwidth - plugin.options.ratios['first-margin'] * plugin.galleryitemwidth)+'px',
-					zIndex: length - (index + 1)
-				});
-				if (index >= plugin.options.limit) {
-					$this.hide();
-				} else {
-					$this.show();
-				}
-			});
-			items.eq(current).closest('li').show().css({
-				left: '0px',
-				zIndex: length.toString()
-			});
-			items.eq(current).closest('li').nextAll().each(function(index) {
-				$this = $(this);
-
-				$this.css({
-					left: (index * plugin.options.ratios['subsequent-margin'] * plugin.galleryitemwidth + plugin.options.ratios['first-margin'] * plugin.galleryitemwidth)+'px',
-					zIndex: length - (index + 1)
-				});
-				if (index >= plugin.options.limit) {
-					$this.hide();
-				} else {
-					$this.show();
-				}
-			});
+			plugin._animate(angle);
+			container.find(plugin.options.selectors.slider).slider('value', index);
 			
 		},
 		prev: function() {
@@ -275,9 +294,97 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 				'first-margin' : .685,
 				'subsequent-margin' : .13
 			},
-			limit: 5
+			limit: 4,
+			radius: 300,
+			depth: .25,
+			tilt: 0
 		}
 	}
+
+	// The changes needed to turn it into Cover Flow.
+	var coverflow = {
+		_create: function() {
+			$("<link>").attr({"rel":"stylesheet","type":"text/css","href":"_css/jquery.gallery.coverflow.css","media":"screen"}).appendTo(document.getElementsByTagName("head")[0]);
+		},
+
+		// Helper for coverflow version
+		_update: function() {
+			// Disable transitions on left, reset each li to be the correct size, re-enable transitions.
+			container.find(plugin.options.selectors.galleryitems).css({ webkitTransition: '-webkit-transform .5s' }).each(function(i) {
+				$(this).css({ width: galleryitems[i].scaledwidth+'px', height: galleryitems[i].scaledheight+'px', borderBottom: galleryitems[i].scaledheight+'px solid #000', marginBottom: '-'+galleryitems[i].scaledheight+'px', webkitTransformOriginY: galleryitems[i].transformOriginY+'px' });
+				$(this).find(plugin.options.selectors.items).attr({ width: galleryitems[i].scaledwidth, height: galleryitems[i].scaledheight });
+			}).css({ webkitTransition: '-webkit-transform .5s, left .5s' });
+		},
+
+		// Templates for the Cover Flow version.
+		_templates: function() {
+			// Define our templates.
+			$.template('gallery.wrapper', '<ul class="gallery" style="width: ${width}px; height: ${height}px;">${content}</ul>');
+			$.template('gallery.wrapperitem', '<li style="width: ${scaledwidth}px; height: ${scaledheight}; border-bottom: ${scaledheight}px solid #000; margin-bottom: -${scaledheight}px; -webkit-transform-origin-y: ${transformOriginY}px;"><img src="${src}" width="${scaledwidth}" height="${scaledheight}" alt="${alt}"/></li>');
+			$.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><div class="track"><div class="liner"></div><div class="slider"></div></div></div>');
+		},
+
+		// Set the focus to a particular index.
+		focus: function(index) {
+			var plugin = this;
+			var container = this.element;
+			var items = this.items;
+			var galleryitems = this.galleryitems;
+			var length = this.length;
+
+			// Watch out for out of bounds.
+			if (index < 0 || index >= length) {
+				return;
+			}
+
+			var previous = this.current;
+			var current = index;
+				this.current = current;
+
+			container.find(plugin.options.selectors.slider).slider('value', current);
+
+			items.eq(previous).closest('li').removeClass('focus');
+			items.eq(current).closest('li').addClass('focus');
+
+			items.eq(current).closest('li').prevAll().each(function(index) {
+				$this = $(this);
+
+				$this.css({
+					left: (index * -plugin.options.ratios['subsequent-margin'] * plugin.galleryitemwidth - plugin.options.ratios['first-margin'] * plugin.galleryitemwidth),
+					zIndex: length - (index + 1)
+				});
+				if (index >= plugin.options.limit) {
+					$this.hide();
+				} else {
+					$this.show();
+				}
+			});
+			items.eq(current).closest('li').show().css({
+				left: '0px',
+				zIndex: length.toString()
+			});
+			items.eq(current).closest('li').nextAll().each(function(index) {
+				$this = $(this);
+
+				$this.css({
+					left: (index * plugin.options.ratios['subsequent-margin'] * plugin.galleryitemwidth + plugin.options.ratios['first-margin'] * plugin.galleryitemwidth),
+					zIndex: length - (index + 1)
+				});
+				if (index >= plugin.options.limit) {
+					$this.hide();
+				} else {
+					$this.show();
+				}
+			});
+		}
+	}
+	
+	// If coverflow is supported, use it.
+	if (false) {
+		$.extend(gallery, coverflow);
+	}
+
+	// Create our widget.
 	$.widget("ui.gallery", gallery);
 })(jQuery);
 
