@@ -198,11 +198,12 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 
 			items.eq(current).closest('li').prevAll().each(function(index) {
 				$this = $(this);
+
 				$this.css({
 					left: (index * -plugin.options.ratios['subsequent-margin'] * plugin.galleryitemwidth - plugin.options.ratios['first-margin'] * plugin.galleryitemwidth)+'px',
-					zIndex: (galleryitems.length - (index + 1)).toString()
+					zIndex: length - (index + 1)
 				});
-				if (index > plugin.options.limit) {
+				if (index >= plugin.options.limit) {
 					$this.hide();
 				} else {
 					$this.show();
@@ -210,15 +211,16 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 			});
 			items.eq(current).closest('li').show().css({
 				left: '0px',
-				zIndex: galleryitems.length.toString()
+				zIndex: length.toString()
 			});
 			items.eq(current).closest('li').nextAll().each(function(index) {
 				$this = $(this);
+
 				$this.css({
 					left: (index * plugin.options.ratios['subsequent-margin'] * plugin.galleryitemwidth + plugin.options.ratios['first-margin'] * plugin.galleryitemwidth)+'px',
-					zIndex: (galleryitems.length - (index + 1)).toString()
+					zIndex: length - (index + 1)
 				});
-				if (index > plugin.options.limit) {
+				if (index >= plugin.options.limit) {
 					$this.hide();
 				} else {
 					$this.show();
@@ -273,7 +275,9 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 				'first-margin' : .685,
 				'subsequent-margin' : .13
 			},
-			limit: 5
+			limit: 4,
+			radius: 500,
+			depth: 2
 		}
 	}
 	$.widget("ui.gallery", gallery);
