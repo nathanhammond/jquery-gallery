@@ -8,7 +8,7 @@
 
 			// Use local variables, "this" can get confusing.
 			var plugin = this;
-			var container = this.element;
+			var container = plugin.element;
 			var items = container.find(plugin.options.selectors.items);
 				plugin.items = items;
 			var length = items.length;
@@ -42,9 +42,9 @@
 		// Helper function to do all the math.
 		_calculate: function() {
 			var plugin = this;
-			var container = this.element;
-			var galleryitems = this.galleryitems;
-			var length = this.length;
+			var container = plugin.element;
+			var galleryitems = plugin.galleryitems;
+			var length = plugin.length;
 
 			// These values are the absolute maximum size for an item based upon the container's size.
 			var maxitemwidth = container.width()/plugin.options.ratios.width;
@@ -100,10 +100,10 @@
 		// Draw the elements on screen the first time.
 		_draw: function() {
 			var plugin = this;
-			var container = this.element;
-			var items = this.items;
-			var length = this.length;
-			var current = this.current;
+			var container = plugin.element;
+			var items = plugin.items;
+			var length = plugin.length;
+			var current = plugin.current;
 
 			// Build information for the template.
 			var galleryitems = [];
@@ -144,7 +144,7 @@
 
 			// Reset our items to be the actual ones!
 			this.items = container.find(plugin.options.selectors.items);
-			this.itemcontainers = container.find(plugin.options.selectors.galleryitems);
+			this.itemcontainers = container.find(plugin.options.selectors.itemcontainers);
 
 			// All set!
 			this.loaded = true;
@@ -159,9 +159,9 @@
 		// This happens any time something changes.
 		_redraw: function() {
 			var plugin = this;
-			var container = this.element;
-			var galleryitems = this.galleryitems;
-			var current = this.current;
+			var container = plugin.element;
+			var galleryitems = plugin.galleryitems;
+			var current = plugin.current;
 
 			// Do all of our calculations.
 			plugin._calculate();
@@ -180,11 +180,12 @@
 		
 		_animate: function(angle) {
 			var plugin = this;
-			var container = this.element;
+			var container = plugin.element;
 
 			plugin.to = angle;
 			container.stop().animate({angle: angle},{
-				step: function(now) {plugin._position(now)}
+				step: function(now) { plugin._position(now); },
+				complete: function() { container.trigger('ready', [plugin]); }
 			});
 		},
 		
@@ -234,10 +235,13 @@
 		// Set the focus to a particular index.
 		focus: function(index) {
 			var plugin = this;
-			var container = this.element;
-			var items = this.items;
-			var galleryitems = this.galleryitems;
-			var length = this.length;
+			var container = plugin.element;
+			var length = plugin.length;
+			
+			// Nothing to see here, move along.
+			if (index < 0 || index >= length) {
+				return;
+			}
 
 			var circle = 2 * Math.PI;
 			var step = circle / (plugin.options.limit * 4);
@@ -245,7 +249,8 @@
 
 			plugin._animate(angle);
 			container.find(plugin.options.selectors.slider).slider('value', index);
-			
+
+			plugin.current = index;
 		},
 		prev: function() {
 			var plugin = this;
@@ -263,8 +268,8 @@
 		},
 		add: function(item) {
 			var plugin = this;
-			var container = this.element;
-			var length = ++this.length;
+			var container = plugin.element;
+			var length = ++plugin.length;
 
 			// Add it into the array for math.
 			plugin.galleryitems.push(item);
@@ -274,6 +279,7 @@
 			container.find(plugin.options.selectors.gallery).append(content);
 			
 			plugin.items = container.find(plugin.options.selectors.items);
+			plugin.itemcontainers = container.find(plugin.options.selectors.itemcontainers);
 			
 			container.find(plugin.options.selectors.slider).slider('option', 'max', length-1);
 			plugin._redraw();
@@ -282,7 +288,7 @@
 		options: {
 			selectors: {
 				'gallery' : '.gallery',
-				'galleryitems' : '.gallery li',
+				'itemcontainers' : 'li',
 				'slider' : '.slider',
 				'skirt' : '.skirt',
 				'items' : 'img'
@@ -310,7 +316,7 @@
 		// Helper for coverflow version
 		_update: function() {
 			// Disable transitions on left, reset each li to be the correct size, re-enable transitions.
-			container.find(plugin.options.selectors.galleryitems).css({ webkitTransition: '-webkit-transform .5s' }).each(function(i) {
+			container.find(plugin.options.selectors.itemcontainers).css({ webkitTransition: '-webkit-transform .5s' }).each(function(i) {
 				$(this).css({ width: galleryitems[i].scaledwidth+'px', height: galleryitems[i].scaledheight+'px', borderBottom: galleryitems[i].scaledheight+'px solid #000', marginBottom: '-'+galleryitems[i].scaledheight+'px', webkitTransformOriginY: galleryitems[i].transformOriginY+'px' });
 				$(this).find(plugin.options.selectors.items).attr({ width: galleryitems[i].scaledwidth, height: galleryitems[i].scaledheight });
 			}).css({ webkitTransition: '-webkit-transform .5s, left .5s' });
@@ -327,17 +333,17 @@
 		// Set the focus to a particular index.
 		focus: function(index) {
 			var plugin = this;
-			var container = this.element;
-			var items = this.items;
-			var galleryitems = this.galleryitems;
-			var length = this.length;
+			var container = plugin.element;
+			var items = plugin.items;
+			var galleryitems = plugin.galleryitems;
+			var length = plugin.length;
 
 			// Watch out for out of bounds.
 			if (index < 0 || index >= length) {
 				return;
 			}
 
-			var previous = this.current;
+			var previous = plugin.current;
 			var current = index;
 				this.current = current;
 
@@ -390,8 +396,6 @@
 
 // TODO: Add in buttons for horizontal scrollbar.
 // TODO: Support typical keyboard, mouse, and touch interactions.
-// TODO: Come up with animation for browsers that don't support 3D.
 // TODO: Add in loading animation for images.
-// TODO: Make templates adjustable by changing selectors to be defined by variables.
 // TODO: Debounce gallery resize.
 // TODO: Force absolute minimum sizes.

@@ -27,6 +27,9 @@
 	<script type="text/javascript" src="jquery.gallery.js"></script>
 	<script type="text/javascript">
 		$('#container').gallery();
+		$('#container').bind('ready', function(e, ui) {
+			// Do stuff.
+		})
 	</script>
 </body>
 </html>
