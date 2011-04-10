@@ -208,7 +208,7 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 					$this.show();
 				}
 			});
-			items.eq(current).closest('li').css({
+			items.eq(current).closest('li').show().css({
 				left: '0px',
 				zIndex: galleryitems.length.toString()
 			});
