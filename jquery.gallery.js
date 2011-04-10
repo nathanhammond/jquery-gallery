@@ -275,9 +275,7 @@ $.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><di
 				'first-margin' : .685,
 				'subsequent-margin' : .13
 			},
-			limit: 4,
-			radius: 500,
-			depth: 2
+			limit: 5
 		}
 	}
 	$.widget("ui.gallery", gallery);
