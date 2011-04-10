@@ -1,0 +1,15 @@
+.skirt { z-index: 10000; position: relative; background: -webkit-gradient(linear, left top, left bottom, color-stop(0, rgba(0,0,0,0)), color-stop(1, rgba(0,0,0,1))); }
+
+.gallery img {
+	-webkit-box-reflect: below 0px -webkit-gradient(linear, left top, left bottom, color-stop(0, rgba(255,255,255,.4)));
+}
+.gallery li {
+	-webkit-transform: perspective(200) translateZ(-70px) rotateY(31deg);
+	-webkit-transition: -webkit-transform .5s, left .5s;
+}
+.gallery li.focus {
+	-webkit-transform: perspective(200) translateZ(0px) rotateY(0deg);
+}
+.gallery li.focus ~ li {
+	-webkit-transform: perspective(200) translateZ(-70px) rotateY(-31deg);
+}
