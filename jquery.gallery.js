@@ -189,7 +189,7 @@
 			plugin.to = angle;
 			container.stop().animate({angle: angle},{
 				step: function(now) { plugin._position(now); },
-				complete: function() { container.trigger('ready', [plugin]); }
+				complete: function() { container.trigger('stop', [plugin]); }
 			});
 		},
 		
@@ -246,6 +246,9 @@
 			if (index < 0 || index >= length) {
 				return;
 			}
+
+			// Okay, we're definitely animating. Look out world!
+			container.trigger('start', [plugin]);
 
 			var circle = 2 * Math.PI;
 			var step = circle / (plugin.options.limit * 4);
@@ -346,6 +349,9 @@
 			if (index < 0 || index >= length) {
 				return;
 			}
+
+			// Okay, we're definitely animating. Look out world!
+			container.trigger('start', [plugin]);
 
 			var previous = plugin.current;
 			var current = index;
