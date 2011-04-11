@@ -34,7 +34,7 @@
 		// Templates for the carousel version.
 		_templates: function() {
 			// Define our templates.
-			$.template('gallery.wrapper', '<ul class="gallery" style="width: ${width}px; height: ${height}px;">${content}</ul>');
+			$.template('gallery.wrapper', '<ul class="gallery" style="margin-top: ${marginTop}px; width: ${width}px; height: ${height}px;">${content}</ul>');
 			$.template('gallery.wrapperitem', '<li><img src="${src}" width="" height="" alt="${alt}"/></li>');
 			$.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><div class="track"><div class="liner"></div><div class="slider"></div></div></div>');
 		},
@@ -91,10 +91,14 @@
 				temporigin = galleryitems[i].scaledheight - galleryheight + (plugin.options.ratios['transform-origin'] * galleryheight);
 				galleryitems[i].transformOriginY = temporigin;
 			}
-			
+
+			// And figure out where to put it.
+			var gallerytop = (container.height() - galleryheight - 24) / 2;
+
 			// Save back our plugin global vars.
 			plugin.galleryheight = galleryheight;
 			plugin.galleryitemwidth = galleryitemwidth;
+			plugin.gallerytop = gallerytop;
 		},
 
 		// Draw the elements on screen the first time.
@@ -129,7 +133,7 @@
 			plugin._calculate();
 
 			// Build our HTML.
-			var gallerywrapper = $.tmpl('gallery.wrapper', { width: plugin.galleryitemwidth, height: plugin.galleryheight });
+			var gallerywrapper = $.tmpl('gallery.wrapper', { marginTop: plugin.gallerytop, width: plugin.galleryitemwidth, height: plugin.galleryheight });
 			var content = $.tmpl('gallery.wrapperitem', galleryitems);
 			var skirt = $.tmpl('gallery.skirt', { height: plugin.galleryheight });
 
