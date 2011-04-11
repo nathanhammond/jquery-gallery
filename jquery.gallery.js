@@ -291,6 +291,13 @@
 			container.find(plugin.options.selectors.slider).slider('option', 'max', length-1);
 			plugin._redraw();
 		},
+		value: function() {
+			return this.current;
+		},
+		iteminfo: function() {
+			var plugin = this;
+			return plugin.galleryitems[plugin.current];
+		},
 		destroy: function() {},
 		options: {
 			selectors: {
