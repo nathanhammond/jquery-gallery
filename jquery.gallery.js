@@ -298,12 +298,10 @@
 			plugin.current = value;
 		},
 		prev: function() {
-			var plugin = this;
-			return plugin.adjust(-1);
+			this.adjust(-1);
 		},
 		next: function() {
-			var plugin = this;
-			return plugin.adjust(1);
+			this.adjust(1);
 		},
 		adjust: function(increment) {
 			var plugin = this;
@@ -362,9 +360,8 @@
 		value: function() {
 			return this.current;
 		},
-		iteminfo: function() {
-			var plugin = this;
-			return plugin.galleryitems[plugin.current];
+		length: function() {
+			return this.length;
 		},
 		destroy: function() {},
 		options: {
