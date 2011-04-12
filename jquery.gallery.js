@@ -360,7 +360,7 @@
 		value: function() {
 			return this.current;
 		},
-		length: function() {
+		max: function() {
 			return this.length;
 		},
 		destroy: function() {},
