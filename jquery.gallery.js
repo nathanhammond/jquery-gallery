@@ -4,7 +4,7 @@
 		_init: function() {
 			// Set some flags.
 			this.loaded = false;
-			this.current = 0;
+			this.current = plugin.options.start;
 
 			// Use local variables, "this" can get confusing.
 			var plugin = this;
@@ -381,6 +381,7 @@
 				'first-margin' : .685,
 				'subsequent-margin' : .13
 			},
+			start: 0,
 			limit: 4,
 			radius: 300,
 			depth: .25,
