@@ -4,10 +4,11 @@
 		_init: function() {
 			// Set some flags.
 			this.loaded = false;
-			this.current = plugin.options.start;
 
 			// Use local variables, "this" can get confusing.
 			var plugin = this;
+			var current = plugin.options.start;
+				plugin.current = current;
 			var container = plugin.element;
 			var originals = container.find(plugin.options.selectors.originals);
 				plugin.originals = originals;
