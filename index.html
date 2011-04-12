@@ -7,7 +7,10 @@
 <link rel="stylesheet" href="_css/jquery.gallery.css" type="text/css" />
 </head>
 <body>
-	<div id="container" class="gallerycontainer" style="width: 50%; height: 300px; overflow: hidden;">
+	<div id="container" class="gallerycontainer" style="width: 100%; height: 300px; overflow: hidden;">
+		<form action="" method="post" style="text-align: center; background: #fff; width: 100%; height: 100%;">
+			<input type="submit" />
+		</form>
 		<img src="images/album.png" alt="" />
 		<img src="images/album.png" alt="" />
 		<img src="images/album.png" alt="" />
@@ -27,9 +30,6 @@
 	<script type="text/javascript" src="jquery.gallery.js"></script>
 	<script type="text/javascript">
 		$('#container').gallery();
-		$('#container').bind('ready', function(e, ui) {
-			// Do stuff.
-		})
 	</script>
 </body>
 </html>

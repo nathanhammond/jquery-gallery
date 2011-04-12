@@ -9,17 +9,17 @@
 			// Use local variables, "this" can get confusing.
 			var plugin = this;
 			var container = plugin.element;
-			var items = container.find(plugin.options.selectors.items);
-				plugin.items = items;
-			var length = items.length;
+			var originals = container.find(plugin.options.selectors.originals);
+				plugin.originals = originals;
+			var length = originals.length;
 				plugin.length = length;
 
 			// Build our templates.
 			plugin._templates();
 
 			// Bind item clicks.
-			container.delegate(plugin.options.selectors.items, 'click', function() {
-				plugin.focus($.inArray(this, plugin.items));
+			container.delegate(plugin.options.selectors.itemcontainers, 'click', function() {
+				plugin.focus($.inArray(this, plugin.itemcontainers));
 			});
 
 			// Bind drawing to resize.
@@ -34,8 +34,8 @@
 		// Templates for the carousel version.
 		_templates: function() {
 			// Define our templates.
-			$.template('gallery.wrapper', '<ul class="gallery" style="margin-top: ${marginTop}px; width: ${width}px; height: ${height}px;">${content}</ul>');
-			$.template('gallery.wrapperitem', '<li><img src="${src}" width="" height="" alt="${alt}"/></li>');
+			$.template('gallery.wrapper', '<ul class="gallery" style="margin-top: ${marginTop}px; width: ${width}px; height: ${height}px;"></ul>');
+			$.template('gallery.itemcontainer', '<li></li>');
 			$.template('gallery.skirt', '<div class="skirt" style="height: ${height}px;"><div class="track"><div class="liner"></div><div class="slider"></div></div></div>');
 		},
 
@@ -43,7 +43,7 @@
 		_calculate: function() {
 			var plugin = this;
 			var container = plugin.element;
-			var galleryitems = plugin.galleryitems;
+			var gallerymath = plugin.gallerymath;
 			var length = plugin.length;
 
 			// These values are the absolute maximum size for an item based upon the container's size.
@@ -51,7 +51,8 @@
 			var maxitemheight = container.height()/plugin.options.ratios.height;
 			
 			// These are the calculated values based upon how the items fit in the container.
-			var galleryitemwidth = maxitemwidth;
+			// Width decreases until it fits all, height is a function of width.
+			var gallerywidth = maxitemwidth;
 			var galleryheight = 0;
 			
 			// Will be used to identify scale in both cases.
@@ -59,12 +60,14 @@
 
 			// The width dimension is the constrained dimension in the gallery. All widths will be the same.
 			for (var i = 0; i < length; i++) {
+				// Skip non-images.
+				if (gallerymath[i].width == 'auto') { continue; }
 
 				// Make sure to account for scaling due to height being greater than the container's max height.
-				tempscale = Math.min(maxitemwidth/galleryitems[i].width, maxitemheight/galleryitems[i].height, 1);
+				tempscale = Math.min(maxitemwidth/gallerymath[i].width, maxitemheight/gallerymath[i].height, 1);
 
 				// Update the calculated width.
-				galleryitemwidth = Math.min(tempscale * galleryitems[i].width, galleryitemwidth);
+				gallerywidth = Math.min(tempscale * gallerymath[i].width, gallerywidth);
 			}
 
 			// Reset tempscale.
@@ -72,73 +75,94 @@
 
 			// We now know the width that the gallery items will be. Calculate scaling factor for each.
 			for (var i = 0; i < length; i++) {
+				// Skip non-images.
+				if (gallerymath[i].height == 'auto') { continue; }
+
 				// Get the scale for the current item.
-				tempscale = galleryitemwidth / galleryitems[i].width;
+				tempscale = gallerywidth / gallerymath[i].width;
 
 				// Update the calculated height of the gallery.
-				galleryheight = Math.max(tempscale * galleryitems[i].height, galleryheight);
+				galleryheight = Math.max(tempscale * gallerymath[i].height, galleryheight);
 
 				// Store the values on the gallery item.
-				galleryitems[i].scaledwidth = galleryitemwidth;
-				galleryitems[i].scaledheight = tempscale * galleryitems[i].height;
+				gallerymath[i].scaledwidth = gallerywidth;
+				gallerymath[i].scaledheight = tempscale * gallerymath[i].height;
+			}
+			
+			// Reset tempscale.
+			tempscale = 1;
+
+			// If we didn't set galleryheight it is because we didn't have anything with specified scale--all jQuerty items.
+			if (galleryheight == 0) {
+				tempscale = gallerywidth / maxitemwidth;
+				galleryheight = maxitemheight * tempscale;
 			}
 
-			// Save ourselves a variable.
+			// Save ourselves a variable or two.
 			var temporigin = 0;
+			var scaledheight = 0;
 
 			// Now that we know the gallery's height, figure out the transformation origin for each.
 			for (var i = 0; i < length; i++) {
-				temporigin = galleryitems[i].scaledheight - galleryheight + (plugin.options.ratios['transform-origin'] * galleryheight);
-				galleryitems[i].transformOriginY = temporigin;
+				scaledheight = gallerymath[i].scaledheight ? gallerymath[i].scaledheight : galleryheight;
+				temporigin = scaledheight - galleryheight + (plugin.options.ratios['transform-origin'] * galleryheight);
+				gallerymath[i].transformOriginY = temporigin;
 			}
 
 			// And figure out where to put it.
+			// 24 is the default slider height.
 			var gallerytop = (container.height() - galleryheight - 24) / 2;
 
 			// Save back our plugin global vars.
 			plugin.galleryheight = galleryheight;
-			plugin.galleryitemwidth = galleryitemwidth;
+			plugin.gallerywidth = gallerywidth;
 			plugin.gallerytop = gallerytop;
+		},
+
+		// Process the width and height of an item.
+		_processitem: function(item) {
+			$item = $(item);
+
+			if (item.nodeName.toLowerCase() == 'img') {
+				var temp = new Image();
+				temp.src = $item.attr('src');
+
+				var height = temp.height;
+				var width = temp.width;
+
+				return { height: height, width: width };
+			} else {
+				return { height:'auto', width: 'auto'};
+			}
 		},
 
 		// Draw the elements on screen the first time.
 		_draw: function() {
 			var plugin = this;
 			var container = plugin.element;
-			var items = plugin.items;
+			var originals = plugin.originals;
 			var length = plugin.length;
 			var current = plugin.current;
 
-			// Build information for the template.
-			var galleryitems = [];
-			items.each(function() {
-				$item = $(this);
-
-				var temp = new Image();
-				var src = $item.attr('src');
-				var alt = $item.attr('alt');
-
-				temp.src = $item.attr('src');
-
-				var height = temp.height;
-				var width = temp.width;
-
-				galleryitems.push({ height: height, width: width, src: src, alt: alt });
+			// Process the width and height of each item.
+			var gallerymath = [];
+			originals.each(function() {
+				var processed = plugin._processitem(this);
+				gallerymath.push(processed);
 			});
 			
 			// We need to store our own representation of the gallery items outside of the HTML so we know what to do when something is added.
-			plugin.galleryitems = galleryitems;
+			plugin.gallerymath = gallerymath;
 
 			// Calculate!
 			plugin._calculate();
 
 			// Build our HTML.
-			var gallerywrapper = $.tmpl('gallery.wrapper', { marginTop: plugin.gallerytop, width: plugin.galleryitemwidth, height: plugin.galleryheight });
-			var content = $.tmpl('gallery.wrapperitem', galleryitems);
+			var gallerywrapper = $.tmpl('gallery.wrapper', { marginTop: plugin.gallerytop, width: plugin.gallerywidth, height: plugin.galleryheight });
 			var skirt = $.tmpl('gallery.skirt', { height: plugin.galleryheight });
 
 			// Add in our HTML.
-			gallerywrapper.html(content);
+			originals.appendTo(gallerywrapper).wrap('<li></li>');
 			container.html(gallerywrapper).append(skirt);
 
 			// Build the slider, set the starting value.
@@ -146,15 +170,14 @@
 				plugin.focus(ui.value);
 			});
 
-			// Reset our items to be the actual ones!
-			this.items = container.find(plugin.options.selectors.items);
-			this.itemcontainers = container.find(plugin.options.selectors.itemcontainers);
+			// Store the item containers.
+			plugin.itemcontainers = container.find(plugin.options.selectors.itemcontainers);
 
 			// All set!
-			this.loaded = true;
+			plugin.loaded = true;
 
 			// Set the starting position to the first element.
-			plugin.focus(current);
+			plugin.focus(current, true);
 		},
 
 		// Helper hook carousel version
@@ -164,14 +187,13 @@
 		_redraw: function() {
 			var plugin = this;
 			var container = plugin.element;
-			var galleryitems = plugin.galleryitems;
 			var current = plugin.current;
 
 			// Do all of our calculations.
 			plugin._calculate();
 
 			// Reset container size.
-			container.find(plugin.options.selectors.gallery).css({ width: plugin.galleryitemwidth+'px', height: plugin.galleryheight+'px'});
+			container.find(plugin.options.selectors.gallery).css({ width: plugin.gallerywidth+'px', height: plugin.galleryheight+'px'});
 
 			plugin._update();
 
@@ -179,7 +201,7 @@
 			container.find(plugin.options.selectors.skirt).css({ height: plugin.galleryheight+'px' });
 
 			// Set the focus back to where we were already.
-			plugin.focus(current);
+			plugin.focus(current, true);
 		},
 		
 		_animate: function(angle) {
@@ -195,16 +217,21 @@
 		
 		_position: function(angle) {
 			var plugin = this;
-			var galleryitems = plugin.galleryitems;
+			var container = plugin.element;
+			var gallerymath = plugin.gallerymath;
+			var itemcontainers = plugin.itemcontainers;
+			var gallerywidth = plugin.gallerywidth;
+			var galleryheight = plugin.galleryheight;
 
 			plugin.from = angle;
+			container.get(0).angle = plugin.from;
 
 			var circle = 2 * Math.PI;
 			var step = circle / (plugin.options.limit * 4);
 			var start = (3/2 * Math.PI) - angle;
 
-			plugin.itemcontainers.each(function(index) {
-				var angle = start + index * step;
+			itemcontainers.each(function(i) {
+				var angle = start + i * step;
 				
 				if (angle <= circle && angle >= Math.PI) {
 					this.style.display = 'block';
@@ -217,8 +244,10 @@
 					y = Math.sin(angle) * plugin.options.radius * plugin.options.tilt,
 					sinzerotoone = ((-Math.sin(angle) + 1)/2),
 					depth = sinzerotoone/(1/(1-plugin.options.depth)) + plugin.options.depth,
-					width = galleryitems[index].scaledwidth * depth,
-					height = galleryitems[index].scaledheight * depth,
+					tempwidth = gallerymath[i].scaledwidth ? gallerymath[i].scaledwidth : gallerywidth,
+					tempheight = gallerymath[i].scaledheight ? gallerymath[i].scaledheight : galleryheight,
+					width = tempwidth * depth,
+					height = tempheight * depth,
 					top = y - height/2 + plugin.galleryheight/2 + 'px',
 					left = Math.round(x) > 0 ? x + 'px' : 'auto',
 					right = Math.round(x) < 0 ? -x + 'px' : 'auto',
@@ -236,28 +265,36 @@
 			});
 		},
 
-		// Set the focus to a particular index.
-		focus: function(index) {
+		// Set the focus to a particular value.
+		focus: function(value, jump) {
 			var plugin = this;
 			var container = plugin.element;
 			var length = plugin.length;
 			
 			// Nothing to see here, move along.
-			if (index < 0 || index >= length) {
+			if (value < 0 || value >= length) {
 				return;
 			}
 
 			// Okay, we're definitely animating. Look out world!
-			container.trigger('start', [plugin]);
+			if (jump == undefined) {
+				container.trigger('start', [plugin]);
+			}
 
+			// Limit is for number of items in one circle quadrant.
 			var circle = 2 * Math.PI;
 			var step = circle / (plugin.options.limit * 4);
-			var angle = index * step;
+			var angle = value * step;
 
-			plugin._animate(angle);
-			container.find(plugin.options.selectors.slider).slider('value', index);
+			// Jump directly to the item?
+			if (jump == undefined) {
+				plugin._animate(angle);
+			} else {
+				plugin._position(angle);
+			}
+			container.find(plugin.options.selectors.slider).slider('value', value);
 
-			plugin.current = index;
+			plugin.current = value;
 		},
 		prev: function() {
 			var plugin = this;
@@ -273,22 +310,52 @@
 
 			plugin.focus(current+increment);
 		},
-		add: function(item) {
+		add: function(item, index) {			
 			var plugin = this;
 			var container = plugin.element;
-			var length = ++plugin.length;
+
+			var $item;
+
+			if (item.jquery) {
+				$item = item;
+				item = $item.get(0);
+			} else {
+				$item = $(item);
+			}
+
+			// Process it for the math array.
+			var processed = plugin._processitem(item);
 
 			// Add it into the array for math.
-			plugin.galleryitems.push(item);
+			if (index != undefined) {
+				plugin.gallerymath.splice(index, 0, processed);
+			} else {
+				plugin.gallerymath.push(processed);
+			}
+
+			// Update our length.
+			var length = plugin.length++;
 
 			// Add the item.
-			var content = $.tmpl('gallery.wrapperitem', item);
-			container.find(plugin.options.selectors.gallery).append(content);
-			
-			plugin.items = container.find(plugin.options.selectors.items);
+			if (index != undefined) {
+				plugin.itemcontainers.eq(index).before($item);
+			} else {
+				container.find(plugin.options.selectors.gallery).append($item);				
+			}
+			$item.wrap('<li></li>');
+
+			// Update our list of item containers which are collecting clicks.
 			plugin.itemcontainers = container.find(plugin.options.selectors.itemcontainers);
+
+			// If we're adding before our current, update our current index.
+			if (index <= plugin.current) {
+				plugin.current++;
+			}
 			
-			container.find(plugin.options.selectors.slider).slider('option', 'max', length-1);
+			// And lengthen our slider.
+			container.find(plugin.options.selectors.slider).slider('option', 'max', length);
+
+			// Redraw!
 			plugin._redraw();
 		},
 		value: function() {
@@ -303,9 +370,9 @@
 			selectors: {
 				'gallery' : '.gallery',
 				'itemcontainers' : 'li',
-				'slider' : '.slider',
+				'originals' : '> *',
 				'skirt' : '.skirt',
-				'items' : 'img'
+				'slider' : '.slider'
 			},
 			ratios: {
 				'width' : 2.5,
@@ -373,7 +440,7 @@
 				$this = $(this);
 
 				$this.css({
-					left: (index * -plugin.options.ratios['subsequent-margin'] * plugin.galleryitemwidth - plugin.options.ratios['first-margin'] * plugin.galleryitemwidth),
+					left: (index * -plugin.options.ratios['subsequent-margin'] * plugin.gallerywidth - plugin.options.ratios['first-margin'] * plugin.gallerywidth),
 					zIndex: length - (index + 1)
 				});
 				if (index >= plugin.options.limit) {
@@ -390,7 +457,7 @@
 				$this = $(this);
 
 				$this.css({
-					left: (index * plugin.options.ratios['subsequent-margin'] * plugin.galleryitemwidth + plugin.options.ratios['first-margin'] * plugin.galleryitemwidth),
+					left: (index * plugin.options.ratios['subsequent-margin'] * plugin.gallerywidth + plugin.options.ratios['first-margin'] * plugin.gallerywidth),
 					zIndex: length - (index + 1)
 				});
 				if (index >= plugin.options.limit) {
@@ -412,6 +479,7 @@
 })(jQuery);
 
 // TODO: Add in buttons for horizontal scrollbar.
+// FIXME: Fix adding 'angle' to the container's expando.
 // TODO: Support typical keyboard, mouse, and touch interactions.
 // TODO: Add in loading animation for images.
 // TODO: Debounce gallery resize.
